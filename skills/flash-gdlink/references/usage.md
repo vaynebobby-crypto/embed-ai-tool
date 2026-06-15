@@ -1,103 +1,66 @@
 # GD-Link 烧录 Skill 用法
 
-这个 skill 自带了一个可执行脚本 [scripts/gdlink_flasher.py](../scripts/gdlink_flasher.py)，适合在需要探测 GD-Link 探针、执行烧录时直接调用。
+通过 Keil MDK5 的 UV4.exe 命令行实现构建 + GD-Link 烧录。
 
 ## 能力概览
 
-- 检测 GD_Link_CLI.exe 是否可用并获取版本信息
-- 列出已连接的 GD-Link 设备
-- 扫描工作区中的 `GDConfig.ini` 配置文件
-- 通过 stdin 管道驱动 GD_Link_CLI 交互式命令行执行烧录
-- 支持 ELF/HEX/BIN 烧录
-- 输出结构化的烧录结果报告
+- 检测 Keil MDK5 环境
+- 构建 Keil 项目（UV4 -r）
+- 通过 CMSIS-DAP 驱动自动烧录（UV4 -d）
+- 首次使用自动配置 CMSIS-DAP 驱动
 
 ## 基础用法
 
 ```bash
-# 探测 GD-Link 环境
+# 探测环境
 python3 skills/flash-gdlink/scripts/gdlink_flasher.py --detect
 
-# 烧录 ELF
+# 首次使用：配置项目使用 CMSIS-DAP 驱动
 python3 skills/flash-gdlink/scripts/gdlink_flasher.py \
-  --artifact /path/to/firmware.elf \
-  --device GD32F303RET6
+  --project path/to/project.uvprojx --set-cmsis-dap
 
-# 烧录 BIN（需要指定基地址）
+# 只构建
 python3 skills/flash-gdlink/scripts/gdlink_flasher.py \
-  --artifact /path/to/firmware.bin \
-  --device GD32F303RET6 \
-  --base-address 0x08000000
+  --project path/to/project.uvprojx --target "GD32G553Q_EVAL" --build-only
 
-# 烧录 HEX
+# 完整构建 + 烧录
 python3 skills/flash-gdlink/scripts/gdlink_flasher.py \
-  --artifact /path/to/firmware.hex \
-  --device GD32F303RET6
+  --project path/to/project.uvprojx --target "GD32G553Q_EVAL"
 
-# 使用 JTAG 接口
+# 跳过构建，直接烧录
 python3 skills/flash-gdlink/scripts/gdlink_flasher.py \
-  --artifact build/app.elf \
-  --device GD32F303RET6 \
-  --interface JTAG
+  --project path/to/project.uvprojx --target "GD32G553Q_EVAL" --flash-only
 ```
 
-## 常见模式
+## 烧录流程
 
-### 1. 环境探测
-
-```bash
-python3 skills/flash-gdlink/scripts/gdlink_flasher.py --detect
-```
-
-输出 GD_Link_CLI 版本信息。
-
-### 2. SWD 模式烧录（默认）
-
-```bash
-python3 skills/flash-gdlink/scripts/gdlink_flasher.py \
-  --artifact build/debug/app.elf \
-  --device GD32F303RET6
-```
-
-### 3. BIN 烧录（需指定基地址）
-
-```bash
-python3 skills/flash-gdlink/scripts/gdlink_flasher.py \
-  --artifact build/fw.bin \
-  --device GD32F303RET6 \
-  --base-address 0x08000000
-```
+1. **构建**：`UV4.exe -r project.uvprojx -t target -j0 -o build.log`
+2. 检查构建日志中 "0 Error(s)" 判定成功
+3. **烧录**：`UV4.exe -d project.uvprojx -t target` 启动调试会话
+4. Keil 自动下载固件（`UpdateFlashBeforeDebugging=1`）
+5. 关闭 Keil 完成烧录
 
 ## 参数说明
 
 | 参数 | 说明 |
 | --- | --- |
-| `--detect` | 探测 GD-Link 环境 |
-| `--artifact` | 固件产物路径（ELF、HEX 或 BIN） |
-| `--device` | 目标芯片型号（如 GD32F303RET6） |
-| `--interface` | 调试接口：`SWD`（默认）或 `JTAG` |
-| `--speed` | 连接速度 kHz（默认 10000） |
-| `--base-address` | BIN 文件的烧录基地址（十六进制） |
-| `--save-config` | 探测成功后保存 GD_Link_CLI 路径到配置 |
-| `-v`, `--verbose` | 输出详细日志 |
+| `--project` / `-p` | Keil .uvprojx 项目文件路径 |
+| `--target` / `-t` | 构建目标名称（默认 GD32G553Q_EVAL） |
+| `--build-only` | 仅构建，不启动烧录 |
+| `--flash-only` | 跳过构建，直接烧录（需已有产物） |
+| `--set-cmsis-dap` | 将项目调试驱动切换为 CMSIS-DAP |
+| `--detect` | 探测 Keil 安装环境 |
+| `-v` / `--verbose` | 输出详细构建日志 |
 
-## GD_Link_CLI.exe 查找顺序
+## 前置条件
 
-1. 配置文件（`get_tool_path("gdlink-cli")`）
-2. `GD_Link_CLI.exe`（PATH 中）
-3. 常见安装路径：用户指定的已知路径
-4. 提示用户手动输入路径
-
-## GD-Link 与 J-Link 对比
-
-| 特性 | GD-Link (本 skill) | J-Link (flash-jlink) |
-|------|-------------------|----------------------|
-| 目标芯片 | GD32 全系列，兼容 Cortex-M | 广泛（需许可） |
-| RTT 日志 | ❌ 不支持 | ✅ 原生支持 |
-| 烧录方式 | GD_Link_CLI 交互式命令行 | J-Link Commander 脚本 |
-| 商业许可 | 免费 | 需要（教育版免费） |
-| 跨平台 | 仅 Windows | 跨平台 |
+1. **Keil MDK 5.30+** 已安装
+2. **GigaDevice GD32G5x3 DFP 1.1.0+** 已安装
+3. GD-Link 在 Keil 中识别为 CMSIS-DAP（Flash → Configure Flash Tools → Debug 验证）
+4. 项目 `DriverSelection` 设置为 4098 (CMSIS-DAP)
+5. 项目 `UpdateFlashBeforeDebugging` 设置为 1
 
 ## 返回码
 
-- `0`：操作成功
-- `1`：参数非法、依赖缺失、探针连接失败、烧录失败
+- `0`：构建 + 烧录成功
+- `1`：构建失败、Keil 未找到、或烧录异常

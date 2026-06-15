@@ -1,61 +1,58 @@
 ---
 name: flash-gdlink
-description: 当需要使用 GigaDevice GD-Link 探针烧录固件到 GD32 或其他 Cortex-M 目标板时使用。
+description: 当需要使用 GD-Link 探针通过 Keil MDK5 烧录固件到 GD32 或其他 Cortex-M 目标板时使用。
 ---
 
-# GD-Link 烧录
+# GD-Link 烧录 (Keil MDK5)
 
 ## 适用场景
 
-- 工作区已有可用固件产物，且目标板连接了 GD-Link 探针。
-- 需要使用 GigaDevice 官方 GD_Link_CLI 进行烧录和校验。
-- 需要扫描工作区中的 `GDConfig.ini` 配置文件或 `ToolSetting.ini` 设置。
+- 工作区有 Keil µVision 项目（.uvprojx），目标板通过 GD-Link 连接。
+- GD-Link 在 Keil 中配置为 CMSIS-DAP 调试器。
+- 需要构建 + 烧录一体化流程。
 
 ## 必要输入
 
-- 固件产物路径，或包含 `artifact_path` 的 `Project Profile`。
-- `--device` 参数指定目标芯片型号（如 `GD32F303RET6`），GD_Link_CLI 要求指定。
-- 可选的接口类型（SWD 或 JTAG，默认 SWD）。
-- 若产物为 BIN，还需要 `--base-address` 烧录基地址。
+- `--project`：Keil .uvprojx 项目文件路径。
+- `--target`：构建目标名称（默认 `GD32G553Q_EVAL`）。
+- 首次使用需用 `--set-cmsis-dap` 将项目驱动从 J-Link 切换到 CMSIS-DAP。
 
 ## 自动探测
 
-- 按 `ELF > HEX > BIN` 选择固件产物。
-- 脚本自动查找 `GD_Link_CLI.exe`，按 Project Profile 配置、常见安装路径、用户提示的顺序搜索。
-- 首次找到后自动写入 Project Profile，后续无需重复搜索。
-- 读取同目录下 `GDConfig.ini` 获取 SWD/JTAG 接口和连接速度参数。
-- 不会猜测设备名；当 `--device` 缺失时阻塞并返回 `ambiguous-context`。
+- `--detect` 模式检测 Keil MDK5 安装路径和版本。
+- 优先查找 `D:\Program Files\ARM\MDK5\UV4\UV4.exe` 和常见安装路径。
+- 构建输出自动检查 "0 Error(s)" 判定成功。
+- AXF/HEX 产物自动从 .uvprojx 项目配置中定位。
 
 ## 执行步骤
 
-1. 先阅读 [references/usage.md](references/usage.md)，确认本次是环境探测还是执行烧录。
-2. 若不确定 GD-Link 环境状态，先运行自带脚本 [scripts/gdlink_flasher.py](scripts/gdlink_flasher.py) 的 `--detect` 模式。
-3. 使用 `--artifact` + `--device` 执行烧录，可选 `--interface` 和 `--speed`。
-4. 对 BIN 文件，必须同时提供 `--base-address`。
-5. 读取脚本输出的烧录结果报告，重点关注校验状态和失败分类。
+1. 若首次使用，运行 `--set-cmsis-dap` 配置项目驱动。
+2. 在 Keil GUI 中确认 GD-Link 被识别（Flash → Configure Flash Tools → Debug → CMSIS-DAP → Settings）。
+3. 使用 `--project` + `--target` 执行构建和烧录。
+4. 可选 `--build-only` 只构建不烧录，`--flash-only` 跳过构建直接烧录。
+5. 脚本启动 Keil 调试会话（UMUpdateFlashBeforeDebugging=1），Keil 自动下载固件。
+6. 关闭 Keil 后脚本退出。
 
 ## 失败分流
 
-- 当 `GD_Link_CLI.exe` 不可用时，返回 `environment-missing`。
-- 当无法安全解析到产物，或 `BIN` 缺少烧录基地址时，返回 `artifact-missing`。
-- 当 GD-Link 无法发现目标时，返回 `connection-failure`。
-- 当 `GDConfig.ini` 配置无效或设备名不被 GD-Link 识别时，返回 `project-config-error`。
-- 当烧录开始但校验或复位失败时，返回 `target-response-abnormal`。
-- 当 `--device` 缺失且无法从工作区推断时，返回 `ambiguous-context`。
+- Keil UV4.exe 未找到 → `environment-missing`
+- 项目文件不存在 → `artifact-missing`
+- 构建失败 → 输出编译错误日志
+- GD-Link 未识别 → 提示在 Keil 中检查 CMSIS-DAP 配置
 
 ## 平台说明
 
-- GD_Link_CLI.exe 为 Windows 原生可执行文件，不支持 Linux/macOS。
-- 自带脚本通过 subprocess stdin 管道与交互式 CLI 通信。
-- 首次使用时需要探测 GD_Link_CLI.exe 路径，写入 Project Profile 后复用。
+- 仅 Windows（Keil MDK5 为 Windows 原生）。
+- 需要 Keil MDK 5.30+ 及 GigaDevice GD32G5x3 DFP 1.1.0+。
+- 脚本通过 subprocess 调用 UV4.exe 命令行。
 
 ## 输出约定
 
-- 输出 GD_Link_CLI 命令、设备名、接口类型、产物路径和校验结果。
-- 在 `Project Profile` 中保留或更新 `artifact_path`、`artifact_kind`、`gdlink_device`、`gdlink_cli_path`。
-- 烧录成功后推荐 `serial-monitor` 或 `debug-gdlink`。
+- 输出 UV4 构建日志、目标芯片信息、烧录状态。
+- 烧录完成后输出固件路径和校验建议。
+- 烧录成功后推荐 `debug-gdlink` 进行调试。
 
 ## 交接关系
 
-- 当下一步要看运行日志时，将成功烧录结果交给 `serial-monitor`。
-- 当用户需要 GDB 调试时，将结果交给 `debug-gdlink`。
+- 需要调试时 → `debug-gdlink`
+- 需要串口监视时 → `serial-monitor`
