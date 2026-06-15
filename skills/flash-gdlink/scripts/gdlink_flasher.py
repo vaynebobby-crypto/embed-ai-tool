@@ -70,6 +70,7 @@ def _init_common_roots() -> list[str]:
         roots.append(f"{drive}\\GD_Link_CLI")
         roots.append(f"{drive}\\GigaDevice")
         roots.append(f"{drive}\\GigaDevice\\GD_Link_CLI")
+        roots.append(f"{drive}\\")  # 全盘回退扫描（depth 受限，需调大）
         for prog_key in ["ProgramFiles", "ProgramFiles(x86)"]:
             prog_dir = os.environ.get(prog_key, "")
             if not prog_dir or drive not in prog_dir:
@@ -499,7 +500,9 @@ def main() -> int:
     # ---- 探测模式 ----
     if args.detect:
         available, gdlink_path, version = check_gdlink()
-        config_iface, config_speed = read_gdconfig(args.gdconfig)
+        # GDConfig.ini 优先从 CLI 所在目录读取
+        config_dir = args.gdconfig or (str(Path(gdlink_path).parent) if gdlink_path else None)
+        config_iface, config_speed = read_gdconfig(config_dir)
         print_detect_report(available, gdlink_path, version, config_iface, config_speed)
         if args.save_config and available and gdlink_path:
             cfg_path = set_tool_path("gdlink-cli", gdlink_path)
