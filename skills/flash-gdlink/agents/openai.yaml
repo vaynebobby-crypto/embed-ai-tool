@@ -1,0 +1,4 @@
+interface:
+  display_name: "GD-Link 烧录"
+  short_description: "通过 GigaDevice GD-Link 探针烧录固件到目标板。"
+  default_prompt: "使用 flash-gdlink skill，探测 GD-Link 探针，选择合适的烧录参数，执行烧录与校验，并输出下一步建议。"
