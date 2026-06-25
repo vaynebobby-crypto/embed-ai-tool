@@ -141,6 +141,7 @@ python3 scripts/em_config.py path
 | `memory-analysis` | 解析 .map 文件或 ELF，生成内存使用报告和符号大小排名 |
 | `rtos-debug` | FreeRTOS/RT-Thread/Zephyr 线程感知调试，栈水位和死锁检测 |
 | `static-analysis` | cppcheck/clang-tidy/GCC analyzer 静态分析，MISRA-C 合规 |
+| `freemaster-debug` | 实时变量监控、在线调参、数据记录 |
 
 ## LLM 使用示例
 
@@ -215,7 +216,8 @@ python3 scripts/em_config.py path
 │   ├── debug-jlink/            # J-Link GDB 调试
 │   ├── memory-analysis/        # 固件内存分析
 │   ├── rtos-debug/             # RTOS 调试
-│   └── static-analysis/        # 静态分析
+│   ├── static-analysis/        # 静态分析
+│   └── freemaster-debug/       # FreeMASTER 实时监控
 ├── shared/                     # 共享约定
 │   ├── contracts.md            # 上下文交接合约
 │   ├── failure-taxonomy.md     # 失败分类

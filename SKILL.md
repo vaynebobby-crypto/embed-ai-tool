@@ -19,7 +19,7 @@ metadata:
 
 1. 向用户展示下面的 **可用技能列表**
 2. 询问用户选择安装方式：
-   - **全部安装** — 安装所有 24 个 skill
+   - **全部安装** — 安装所有 25 个 skill
    - **按需安装** — 用户指定要安装的 skill 名称
 3. 根据用户选择执行对应的安装命令
 
@@ -42,6 +42,7 @@ metadata:
 | 调试 | `debug-jlink` | 通过 J-Link GDB Server 在线调试和崩溃分析 |
 | 调试 | `debug-platformio` | 通过 PlatformIO 内置 GDB 调试 |
 | 调试 | `rtos-debug` | FreeRTOS/RT-Thread/Zephyr 线程感知调试 |
+| 调试 | `freemaster-debug` | 实时变量监控、在线调参、数据记录 |
 | 通信 | `serial-monitor` | 串口选择与运行日志抓取 |
 | 通信 | `modbus-debug` | Modbus RTU/TCP 寄存器读写与从站扫描 |
 | 通信 | `can-debug` | CAN 总线帧监听、发送和节点扫描 |
@@ -137,6 +138,7 @@ python3 /tmp/embed-ai-tool/scripts/install.py /path/to/project --skills build-cm
 | `debug-jlink` | J-Link GDB Server 调试 |
 | `debug-platformio` | PlatformIO 内置 GDB |
 | `rtos-debug` | RTOS 线程感知调试（FreeRTOS / RT-Thread / Zephyr） |
+| `freemaster-debug` | 实时变量监控、在线调参、数据记录 |
 
 **通信 / 监控：**
 
