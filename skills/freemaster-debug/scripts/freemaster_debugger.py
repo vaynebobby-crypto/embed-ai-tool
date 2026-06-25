@@ -66,7 +66,7 @@ def find_freemaster() -> str | None:
         return configured
 
     import shutil
-    for exe in ["FreeMASTER.exe", "FreeMASTER Lite.exe"]:
+    for exe in ["pcmaster.exe", "FreeMASTER.exe", "FreeMASTER Lite.exe"]:
         found = shutil.which(exe)
         if found:
             return found

@@ -44,7 +44,9 @@ FREEMASTER_SEARCH_ROOTS: list[str] = [
 ]
 
 FREEMASTER_EXE_PATTERNS: list[str] = [
+    "pcmaster.exe",
     "FreeMASTER*.exe",
+    "**/pcmaster.exe",
     "**/FreeMASTER*.exe",
 ]
 
@@ -95,7 +97,7 @@ def search_freemaster() -> list[dict[str, object]]:
             })
 
     # 2. PATH 环境变量
-    for exe_name in ["FreeMASTER.exe", "FreeMASTER Lite.exe"]:
+    for exe_name in ["pcmaster.exe", "FreeMASTER.exe", "FreeMASTER Lite.exe"]:
         found = shutil.which(exe_name)
         if found:
             p = Path(found)
