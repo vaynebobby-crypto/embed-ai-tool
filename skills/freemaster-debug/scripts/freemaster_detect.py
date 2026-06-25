@@ -192,22 +192,16 @@ def main() -> int:
     parser = build_parser()
     args = parser.parse_args()
 
-    if args.detect:
-        env = detect_environment()
-        print_detect_report(env)
-
-        if args.save_config and env["freemaster"]["available"]:
-            inst = env["freemaster"]["preferred"]
-            if inst:
-                cfg_path = set_tool_path("freemaster", str(inst["path"]))
-                print(f"  💾 FreeMASTER 路径已保存到 {cfg_path}")
-
-        ok = env["freemaster"]["available"] and env["platform"]["supported"]
-        return 0 if ok else 1
-
-    # 默认行为：打印报告
+    # Detection always happens (this script only does detection)
     env = detect_environment()
     print_detect_report(env)
+
+    if args.save_config and env["freemaster"]["available"]:
+        inst = env["freemaster"]["preferred"]
+        if inst:
+            cfg_path = set_tool_path("freemaster", str(inst["path"]))
+            print(f"  💾 FreeMASTER 路径已保存到 {cfg_path}")
+
     ok = env["freemaster"]["available"] and env["platform"]["supported"]
     return 0 if ok else 1
 
