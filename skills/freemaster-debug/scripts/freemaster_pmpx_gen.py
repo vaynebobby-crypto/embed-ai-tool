@@ -38,10 +38,10 @@ _SCRIPT_DIR = Path(__file__).resolve().parent
 _REFERENCES_DIR = _SCRIPT_DIR.parent / "references"
 _DEFAULT_TEMPLATE = _REFERENCES_DIR / "_ref_freemaster_template.pmpx"
 
-# .pmpx 中 ELF 文件路径的唯一定位正则
+# 仅匹配 ELF/AXF/OUT 文件路径，避免误匹配 CFlashProgDlg.file_name
 # 格式: <member name="file_name" type="string">C:\path\to\file.axf</member>
 _FILE_NAME_RE = re.compile(
-    r'(<member name="file_name" type="string">)[^<]*(</member>)'
+    r'(<member name="file_name" type="string">)[^<]+\.(?:axf|elf|out)(</member>)'
 )
 
 
