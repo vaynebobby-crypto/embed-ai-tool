@@ -5,7 +5,6 @@
 
 - 按已知安装路径盲搜 FreeMASTER.exe
 - 识别 Lite 版与完整版
-- 检查 BDM/J-Link 通信插件是否可用
 - 支持保存探测结果到工具配置
 """
 
@@ -13,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import platform
+import shutil
 import sys
 from pathlib import Path
 
@@ -95,7 +95,6 @@ def search_freemaster() -> list[dict[str, object]]:
             })
 
     # 2. PATH 环境变量
-    import shutil
     for exe_name in ["FreeMASTER.exe", "FreeMASTER Lite.exe"]:
         found = shutil.which(exe_name)
         if found:
