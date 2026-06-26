@@ -121,27 +121,30 @@ python3 scripts/em_config.py path
 | `build-cmake` | 配置并构建基于 CMake 的 MCU 固件工程 |
 | `build-keil` | 配置并构建基于 Keil MDK 的固件工程 |
 | `build-iar` | 配置并构建基于 IAR EWARM 的固件工程 |
+| `build-makefile` | 配置并构建基于 Makefile 的固件工程 |
 | `build-platformio` | 配置并构建基于 PlatformIO 的固件工程 |
+| `build-idf` | 配置目标芯片并构建 ESP-IDF 固件工程 |
 | `flash-keil` | 通过 Keil MDK 内置调试器烧录固件 |
 | `flash-openocd` | 通过 OpenOCD 烧录 ELF/HEX/BIN 产物 |
+| `flash-jlink` | 通过 SEGGER J-Link 烧录固件，支持 RTT 日志捕获 |
+| `flash-gdlink` | 通过 GD-Link / CMSIS-DAP 烧录 GigaDevice MCU 固件 |
 | `flash-platformio` | 通过 PlatformIO 上传机制烧录固件 |
-| `debug-gdb-openocd` | 通过 OpenOCD 附着 GDB，支持下载后调试、仅附着和崩溃现场排查 |
+| `flash-idf` | 通过 ESP-IDF 工具链烧录固件并支持 JTAG 调试 |
+| `debug-gdb-openocd` | 通过 OpenOCD + GDB 进行下载后调试、仅附着和崩溃现场排查 |
+| `debug-jlink` | 通过 J-Link GDB Server 进行固件在线调试和崩溃分析 |
+| `debug-gdlink` | 通过 GD-Link + Keil MDK 进行 GigaDevice MCU 调试 |
 | `debug-platformio` | 通过 PlatformIO 内置 GDB 调试 |
-| `serial-monitor` | 选择串口并抓取运行日志 |
+| `freemaster-debug` | 通过 FreeMASTER + J-Link BDM 进行实时变量监控、在线调参和数据记录 |
+| `serial-monitor` | 选择串口并抓取运行日志，支持先监听再复位 |
 | `modbus-debug` | Modbus RTU/TCP 寄存器读写、从站扫描和持续监控 |
 | `can-debug` | CAN 总线帧监听、发送和节点扫描 |
 | `visa-debug` | VISA 仪器 SCPI 通信、波形捕获和截图 |
-| `peripheral-driver` | 搜索并适配开源 BSP 外设驱动到目标工程 |
-| `stm32-hal-development` | STM32 HAL 库开发指导与最佳实践 |
-| `workflow` | 串联多个 skill 的流水线编排（编译+烧录+监控/调试） |
-| `build-idf` | 配置目标芯片并构建 ESP-IDF 固件工程 |
-| `flash-idf` | 通过 ESP-IDF 工具链烧录固件并支持 JTAG 调试 |
-| `flash-jlink` | 通过 SEGGER J-Link 烧录固件，支持 RTT 日志捕获 |
-| `debug-jlink` | 通过 J-Link GDB Server 进行固件在线调试和崩溃分析 |
 | `memory-analysis` | 解析 .map 文件或 ELF，生成内存使用报告和符号大小排名 |
 | `rtos-debug` | FreeRTOS/RT-Thread/Zephyr 线程感知调试，栈水位和死锁检测 |
 | `static-analysis` | cppcheck/clang-tidy/GCC analyzer 静态分析，MISRA-C 合规 |
-| `freemaster-debug` | 实时变量监控、在线调参、数据记录 |
+| `peripheral-driver` | 搜索并适配开源 BSP 外设驱动到目标工程 |
+| `stm32-hal-development` | STM32 HAL 库开发指导与最佳实践 |
+| `workflow` | 串联多个 skill 的流水线编排（编译→烧录→监控/调试） |
 
 ## LLM 使用示例
 
@@ -185,6 +188,9 @@ python3 scripts/em_config.py path
 /build-idf
 /flash-idf
 
+# FreeMASTER 实时监控
+/freemaster-debug
+
 # 一键流水线（编译 → 烧录 → 监控）
 /workflow
 ```
@@ -197,35 +203,43 @@ python3 scripts/em_config.py path
 │   ├── build-cmake/            # CMake 构建
 │   ├── build-keil/             # Keil 构建
 │   ├── build-iar/              # IAR 构建
+│   ├── build-makefile/         # Makefile 构建
 │   ├── build-platformio/       # PlatformIO 构建
+│   ├── build-idf/              # ESP-IDF 构建
 │   ├── flash-keil/             # Keil 烧录
 │   ├── flash-openocd/          # OpenOCD 烧录
+│   ├── flash-jlink/            # J-Link 烧录
+│   ├── flash-gdlink/           # GD-Link 烧录
 │   ├── flash-platformio/       # PlatformIO 烧录
-│   ├── debug-gdb-openocd/      # GDB 调试
+│   ├── flash-idf/              # ESP-IDF 烧录
+│   ├── debug-gdb-openocd/      # OpenOCD + GDB 调试
+│   ├── debug-jlink/            # J-Link GDB 调试
+│   ├── debug-gdlink/           # GD-Link 调试
 │   ├── debug-platformio/       # PlatformIO 调试
+│   ├── freemaster-debug/       # FreeMASTER 实时监控
 │   ├── serial-monitor/         # 串口监视
 │   ├── modbus-debug/           # Modbus 调试
 │   ├── can-debug/              # CAN 总线调试
 │   ├── visa-debug/             # VISA 仪器调试
-│   ├── peripheral-driver/      # 外设驱动适配
-│   ├── stm32-hal-development/  # STM32 HAL 开发
-│   ├── workflow/               # 流水线编排
-│   ├── build-idf/              # ESP-IDF 构建
-│   ├── flash-idf/              # ESP-IDF 烧录
-│   ├── flash-jlink/            # J-Link 烧录
-│   ├── debug-jlink/            # J-Link GDB 调试
 │   ├── memory-analysis/        # 固件内存分析
 │   ├── rtos-debug/             # RTOS 调试
 │   ├── static-analysis/        # 静态分析
-│   └── freemaster-debug/       # FreeMASTER 实时监控
+│   ├── peripheral-driver/      # 外设驱动适配
+│   ├── stm32-hal-development/  # STM32 HAL 开发
+│   └── workflow/               # 流水线编排
 ├── shared/                     # 共享约定
 │   ├── contracts.md            # 上下文交接合约
 │   ├── failure-taxonomy.md     # 失败分类
 │   ├── platform-compatibility.md
 │   ├── project_detect.py       # 统一项目探测模块
+│   ├── tool_config.py          # 工具路径持久化配置
 │   └── references/
 ├── templates/                  # Skill 模板
 │   └── skill-template/
+├── docs/                       # 设计文档
+│   └── superpowers/
+│       ├── specs/              # 设计规格
+│       └── plans/              # 实现计划
 └── scripts/
     ├── install.py              # 安装 / 卸载 / 状态检查
     ├── validate_repo.py        # 结构校验
