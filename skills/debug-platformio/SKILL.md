@@ -46,6 +46,12 @@ description: 当需要通过 PlatformIO 内置调试功能对目标板进行 GDB
 - `debug-not-supported`：板卡不支持调试或未配置 debug_tool。
 - `debug-failure`：调试会话异常终止。
 
+## 平台说明
+
+- 跨平台（Windows / Linux / macOS），依赖 PlatformIO CLI。
+- 调试后端由 `platformio.ini` 中的 `debug_tool` 自动管理（OpenOCD / pyOCD / J-Link）。
+- 调试探针支持取决于板卡配置和硬件连接。
+
 ## 输出约定
 
 示例输出格式：

@@ -19,7 +19,7 @@ metadata:
 
 1. 向用户展示下面的 **可用技能列表**
 2. 询问用户选择安装方式：
-   - **全部安装** — 安装所有 25 个 skill
+   - **全部安装** — 安装所有 27 个 skill
    - **按需安装** — 用户指定要安装的 skill 名称
 3. 根据用户选择执行对应的安装命令
 
@@ -35,11 +35,13 @@ metadata:
 | 构建 | `build-makefile` | 配置并构建基于 Makefile 的固件工程 |
 | 烧录 | `flash-keil` | 通过 Keil MDK 内置调试器烧录固件 |
 | 烧录 | `flash-openocd` | 通过 OpenOCD 烧录 ELF/HEX/BIN 产物 |
+| 烧录 | `flash-jlink` | 通过 SEGGER J-Link 烧录固件，支持 RTT 日志捕获 |
+| 烧录 | `flash-gdlink` | 通过 GD-Link / CMSIS-DAP 烧录 GigaDevice MCU 固件 |
 | 烧录 | `flash-platformio` | 通过 PlatformIO 上传机制烧录固件 |
 | 烧录 | `flash-idf` | 通过 ESP-IDF 工具链烧录固件并支持 JTAG 调试 |
-| 烧录 | `flash-jlink` | 通过 SEGGER J-Link 烧录固件，支持 RTT 日志捕获 |
 | 调试 | `debug-gdb-openocd` | 通过 OpenOCD 附着 GDB 调试 |
 | 调试 | `debug-jlink` | 通过 J-Link GDB Server 在线调试和崩溃分析 |
+| 调试 | `debug-gdlink` | 通过 GD-Link + Keil MDK 调试 GigaDevice MCU |
 | 调试 | `debug-platformio` | 通过 PlatformIO 内置 GDB 调试 |
 | 调试 | `rtos-debug` | FreeRTOS/RT-Thread/Zephyr 线程感知调试 |
 | 调试 | `freemaster-debug` | 实时变量监控、在线调参、数据记录 |
@@ -59,16 +61,16 @@ metadata:
 
 ```bash
 # npx 全部安装
-npx skills add LeoKemp223/embed-ai-tool -g -y
+npx skills add vaynebobby-crypto/embed-ai-tool -g -y
 
 # npx 按需安装
-npx skills add LeoKemp223/embed-ai-tool --skill build-cmake --skill flash-openocd -g -y
+npx skills add vaynebobby-crypto/embed-ai-tool --skill build-cmake --skill flash-openocd -g -y
 
 # Python 全部安装
-python3 /tmp/embed-ai-tool/scripts/install.py /path/to/project
+python3 embed-ai-tool/scripts/install.py /path/to/project
 
 # Python 按需安装
-python3 /tmp/embed-ai-tool/scripts/install.py /path/to/project --skills build-cmake flash-openocd
+python3 embed-ai-tool/scripts/install.py /path/to/project --skills build-cmake flash-openocd
 ```
 
 ---
@@ -127,6 +129,7 @@ python3 /tmp/embed-ai-tool/scripts/install.py /path/to/project --skills build-cm
 | `flash-keil` | Keil 工程 + 内置调试器（ST-Link / J-Link / CMSIS-DAP） |
 | `flash-openocd` | OpenOCD 兼容探针（ST-Link / CMSIS-DAP / DAPLink） |
 | `flash-jlink` | SEGGER J-Link 探针 |
+| `flash-gdlink` | GD-Link / CMSIS-DAP（GigaDevice MCU） |
 | `flash-platformio` | PlatformIO 上传（串口 / JTAG / DFU） |
 | `flash-idf` | ESP-IDF 工具链（ESP32 系列串口烧录） |
 
@@ -136,6 +139,7 @@ python3 /tmp/embed-ai-tool/scripts/install.py /path/to/project --skills build-cm
 |------|----------|
 | `debug-gdb-openocd` | OpenOCD + GDB 调试 |
 | `debug-jlink` | J-Link GDB Server 调试 |
+| `debug-gdlink` | GD-Link + Keil MDK 调试（GigaDevice MCU） |
 | `debug-platformio` | PlatformIO 内置 GDB |
 | `rtos-debug` | RTOS 线程感知调试（FreeRTOS / RT-Thread / Zephyr） |
 | `freemaster-debug` | 实时变量监控、在线调参、数据记录 |

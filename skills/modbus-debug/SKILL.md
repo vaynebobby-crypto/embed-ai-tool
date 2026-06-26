@@ -18,10 +18,11 @@ description: 当需要调试 Modbus RTU（串口）或 Modbus TCP（网络）设
 - TCP 模式：主机 IP 和端口、从站地址。
 - 操作类型：读/写/扫描/监控。
 
-## 依赖
+## 自动探测
 
-- `pymodbus`（pip install pymodbus）
-- `pyserial`（RTU 模式需要）
+- 自动列出系统中可用的串口列表。
+- 支持 Modbus RTU（串口扫描从站地址）和 Modbus TCP（网络扫描）。
+- 若探测失败，提示安装 `pymodbus` / `pyserial`。
 
 ## 执行步骤
 
@@ -51,6 +52,12 @@ description: 当需要调试 Modbus RTU（串口）或 Modbus TCP（网络）设
 - `slave-no-response`：从站地址无响应。
 - `illegal-function`：设备不支持该功能码。
 - `illegal-address`：寄存器地址越界。
+
+## 平台说明
+
+- 跨平台（Windows / Linux / macOS），依赖 `pymodbus` 库。
+- RTU 模式需 `pyserial`，TCP 模式仅需网络连接。
+- 串口名称因平台而异（Windows: COMx，Linux: /dev/ttyUSBx，macOS: /dev/cu.*）。
 
 ## 输出约定
 

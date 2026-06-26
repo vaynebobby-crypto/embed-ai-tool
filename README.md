@@ -12,7 +12,7 @@
 在任意支持 skill 的大模型对话中输入：
 
 ```
-帮我安装 https://github.com/LeoKemp223/embed-ai-tool.git 的 skill
+帮我安装 https://github.com/vaynebobby-crypto/embed-ai-tool.git 的 skill
 ```
 
 大模型会展示可用技能列表，让你选择全部安装或按需安装，然后自动完成配置。
@@ -24,13 +24,13 @@
 ### 安装全部 skill
 
 ```bash
-npx skills add LeoKemp223/embed-ai-tool -g -y
+npx skills add vaynebobby-crypto/embed-ai-tool -g -y
 ```
 
 ### 安装指定 skill
 
 ```bash
-npx skills add LeoKemp223/embed-ai-tool --skill build-cmake --skill flash-openocd -g -y
+npx skills add vaynebobby-crypto/embed-ai-tool --skill build-cmake --skill flash-openocd -g -y
 ```
 
 ### 管理
@@ -53,7 +53,7 @@ npx skills remove -g        # 移除
 ### 安装所有 skill
 
 ```bash
-git clone https://github.com/LeoKemp223/embed-ai-tool.git
+git clone https://github.com/vaynebobby-crypto/embed-ai-tool.git
 python3 embed-ai-tool/scripts/install.py /path/to/your-project
 ```
 
@@ -107,8 +107,14 @@ python3 scripts/em_config.py set openocd /usr/bin/openocd
 # 设置全局工具路径
 python3 scripts/em_config.py set uv4 "C:\Keil_v5\UV4\UV4.exe" --global
 
+# 查询工具路径
+python3 scripts/em_config.py get openocd
+
 # 查看已配置的工具
 python3 scripts/em_config.py list
+
+# 删除配置项
+python3 scripts/em_config.py remove openocd
 
 # 查看配置文件位置
 python3 scripts/em_config.py path
@@ -199,51 +205,67 @@ python3 scripts/em_config.py path
 
 ```text
 .
-├── skills/                     # 技能模块
-│   ├── build-cmake/            # CMake 构建
-│   ├── build-keil/             # Keil 构建
-│   ├── build-iar/              # IAR 构建
-│   ├── build-makefile/         # Makefile 构建
-│   ├── build-platformio/       # PlatformIO 构建
-│   ├── build-idf/              # ESP-IDF 构建
-│   ├── flash-keil/             # Keil 烧录
-│   ├── flash-openocd/          # OpenOCD 烧录
-│   ├── flash-jlink/            # J-Link 烧录
-│   ├── flash-gdlink/           # GD-Link 烧录
-│   ├── flash-platformio/       # PlatformIO 烧录
-│   ├── flash-idf/              # ESP-IDF 烧录
-│   ├── debug-gdb-openocd/      # OpenOCD + GDB 调试
-│   ├── debug-jlink/            # J-Link GDB 调试
-│   ├── debug-gdlink/           # GD-Link 调试
-│   ├── debug-platformio/       # PlatformIO 调试
-│   ├── freemaster-debug/       # FreeMASTER 实时监控
-│   ├── serial-monitor/         # 串口监视
-│   ├── modbus-debug/           # Modbus 调试
-│   ├── can-debug/              # CAN 总线调试
-│   ├── visa-debug/             # VISA 仪器调试
-│   ├── memory-analysis/        # 固件内存分析
-│   ├── rtos-debug/             # RTOS 调试
-│   ├── static-analysis/        # 静态分析
-│   ├── peripheral-driver/      # 外设驱动适配
-│   ├── stm32-hal-development/  # STM32 HAL 开发
-│   └── workflow/               # 流水线编排
-├── shared/                     # 共享约定
-│   ├── contracts.md            # 上下文交接合约
-│   ├── failure-taxonomy.md     # 失败分类
+├── .claude/
+│   └── settings.json            # 权限白名单
+├── SKILL.md                     # 总控 skill（安装引导 + 指令消歧）
+├── README.md
+├── README_EN.md
+├── CONTRIBUTING.md
+├── skills/                      # 技能模块（27 个）
+│   ├── build-cmake/             # CMake 构建
+│   │   ├── SKILL.md
+│   │   ├── agents/              # 子 agent 定义
+│   │   ├── references/
+│   │   └── scripts/
+│   ├── build-keil/              # Keil 构建
+│   ├── build-iar/               # IAR 构建
+│   ├── build-makefile/          # Makefile 构建
+│   ├── build-platformio/        # PlatformIO 构建
+│   ├── build-idf/               # ESP-IDF 构建
+│   ├── flash-keil/              # Keil 烧录
+│   ├── flash-openocd/           # OpenOCD 烧录
+│   ├── flash-jlink/             # J-Link 烧录
+│   ├── flash-gdlink/            # GD-Link 烧录
+│   ├── flash-platformio/        # PlatformIO 烧录
+│   ├── flash-idf/               # ESP-IDF 烧录
+│   ├── debug-gdb-openocd/       # OpenOCD + GDB 调试
+│   ├── debug-jlink/             # J-Link GDB 调试
+│   ├── debug-gdlink/            # GD-Link 调试
+│   ├── debug-platformio/        # PlatformIO 调试
+│   ├── freemaster-debug/        # FreeMASTER 实时监控
+│   ├── serial-monitor/          # 串口监视
+│   ├── modbus-debug/            # Modbus 调试
+│   ├── can-debug/               # CAN 总线调试
+│   ├── visa-debug/              # VISA 仪器调试
+│   ├── memory-analysis/         # 固件内存分析
+│   ├── rtos-debug/              # RTOS 调试
+│   ├── static-analysis/         # 静态分析
+│   ├── peripheral-driver/       # 外设驱动适配
+│   ├── stm32-hal-development/   # STM32 HAL 开发
+│   └── workflow/                # 流水线编排
+├── shared/                      # 共享约定
+│   ├── contracts.md             # 上下文交接合约
+│   ├── failure-taxonomy.md      # 失败分类
 │   ├── platform-compatibility.md
-│   ├── project_detect.py       # 统一项目探测模块
-│   ├── tool_config.py          # 工具路径持久化配置
+│   ├── project_detect.py        # 统一项目探测模块
+│   ├── tool_config.py           # 工具路径持久化配置
+│   ├── idf_env.py               # ESP-IDF 环境管理
 │   └── references/
-├── templates/                  # Skill 模板
+│       ├── acceptance-scenarios.md
+│       └── tool-detection.md
+├── templates/                   # Skill 模板
 │   └── skill-template/
-├── docs/                       # 设计文档
+│       ├── SKILL.md
+│       ├── CHECKLIST.md
+│       └── SCENARIOS.md
+├── docs/                        # 设计文档
 │   └── superpowers/
-│       ├── specs/              # 设计规格
-│       └── plans/              # 实现计划
+│       ├── specs/               # 设计规格
+│       └── plans/               # 实现计划
 └── scripts/
-    ├── install.py              # 安装 / 卸载 / 状态检查
-    ├── validate_repo.py        # 结构校验
-    └── em_config.py            # 工具路径配置 CLI
+    ├── install.py               # 安装 / 卸载 / 状态检查
+    ├── validate_repo.py         # 结构校验
+    └── em_config.py             # 工具路径配置 CLI
 ```
 
 <img width="2955" height="1955" alt="PixPin_2026-04-26_22-31-41" src="https://github.com/user-attachments/assets/e62e3118-929e-494c-8d24-c9dcebec22c3" />

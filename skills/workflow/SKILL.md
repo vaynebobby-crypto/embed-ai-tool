@@ -17,10 +17,11 @@ description: 当需要串联多个 skill 完成编译+烧录+监控或编译+烧
 - 工程路径。
 - 可选：构建目标、串口、波特率、烧录参数。
 
-## 依赖
+## 自动探测
 
-- 对应构建系统的 skill 脚本已存在（build-keil、flash-keil 等）。
-- 各 skill 的外部依赖已安装（Keil UV4、CMake、PlatformIO CLI 等）。
+- 自动检测工作区中的可用构建系统和已安装 skill。
+- 根据工程文件特征（`.uvprojx`、`CMakeLists.txt`、`platformio.ini`）匹配流水线模板。
+- 若无可匹配的构建系统，提示用户选择。
 
 ## 执行步骤
 
@@ -42,6 +43,12 @@ description: 当需要串联多个 skill 完成编译+烧录+监控或编译+烧
 
 - `environment-missing`：对应 skill 脚本不存在。
 - `target-response-abnormal`：某个步骤执行失败（编译错误、烧录失败等）。
+
+## 平台说明
+
+- 跨平台（Windows / Linux / macOS）。
+- 各子步骤的平台限制取决于被编排的 skill（如 Keil 仅 Windows）。
+- 流水线编排器本身不限制平台。
 
 ## 输出约定
 
