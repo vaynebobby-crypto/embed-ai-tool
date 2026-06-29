@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""GD-Link flasher via Keil MDK5 (UV4.exe).
+"""GD-Link flash tool via Keil MDK5 (UV4.exe).
 
 Supports:
-- Build-only mode (UV4 -r)
-- Flash mode (UV4 debug with auto-download)
-- CMSIS-DAP driver first-time setup
+- Build (UV4 -r)
+- Flash via debug session (UV4 -d)
+- Safe flash configuration presets (keil_flash_config)
+- CMSIS-DAP / J-Link / ST-Link driver management
 """
 
 from __future__ import annotations
@@ -12,14 +13,20 @@ from __future__ import annotations
 import argparse
 import subprocess
 import sys
-import time
-import xml.etree.ElementTree as ET
 from pathlib import Path
 
+_SCRIPT_DIR = Path(__file__).resolve().parent
+_SKILLS_DIR = _SCRIPT_DIR.parent.parent
+_SHARED_DIR = _SKILLS_DIR.parent / "shared"
+if str(_SHARED_DIR) not in sys.path:
+    sys.path.insert(0, str(_SHARED_DIR))
 
-# Keil driver selection codes
-DRIVER_CMSIS_DAP = 4098
-DRIVER_JLINK = 4099
+from keil_flash_config import (
+    FLASH_PRESETS,
+    DRIVER_NAMES,
+    read_flash_config,
+    apply_flash_preset,
+)
 
 # Known Keil paths
 _KEIL_CANDIDATES = [
@@ -30,38 +37,19 @@ _KEIL_CANDIDATES = [
 
 
 def find_keil_uv4() -> Path | None:
-    """Locate UV4.exe."""
+    """Locate UV4.exe from known paths or PATH."""
     for p in _KEIL_CANDIDATES:
         if p.exists():
             return p
-    found = shutil_which("UV4.exe")
-    return Path(found) if found else None
-
-
-def shutil_which(name: str) -> str | None:
     import shutil
-    return shutil.which(name)
-
-
-def set_driver_selection(proj_path: Path, driver: int) -> bool:
-    """Set <DriverSelection> in .uvprojx XML."""
-    try:
-        tree = ET.parse(str(proj_path))
-        for elem in tree.iter():
-            if elem.tag == "DriverSelection":
-                elem.text = str(driver)
-                tree.write(str(proj_path), encoding="UTF-8", xml_declaration=True)
-                return True
-        return False
-    except Exception:
-        return False
+    found = shutil.which("UV4.exe")
+    return Path(found) if found else None
 
 
 def build_project(uv4: Path, proj: Path, target: str) -> tuple[bool, str]:
     """Run UV4 -r (rebuild). Returns (success, build_log_text)."""
     log_path = proj.with_suffix(".build.log")
 
-    # UV4 -r: rebuild all, -j0: single thread, -o: log file
     cmd = [
         str(uv4),
         "-r", str(proj),
@@ -82,7 +70,6 @@ def build_project(uv4: Path, proj: Path, target: str) -> tuple[bool, str]:
     if log_path.exists():
         log_text = log_path.read_text(encoding="utf-8", errors="replace")
 
-    # Success: "0 Error(s)" in log + exit code 0
     success = (
         "0 Error(s)" in log_text
         and proc.returncode == 0
@@ -94,7 +81,6 @@ def flash_project(uv4: Path, proj: Path, target: str) -> bool:
     """Flash via UV4 debug session (auto-download)."""
     print("Starting Keil uVision in debug mode...")
     print("The firmware will be downloaded automatically.")
-    print("Press Ctrl+F5 or Flash->Download if auto-download doesn't start.")
     print("Close Keil when flashing is done.\n")
 
     cmd = [
@@ -108,7 +94,6 @@ def flash_project(uv4: Path, proj: Path, target: str) -> bool:
         cwd=str(proj.parent),
     )
 
-    # Wait for user to close Keil
     try:
         ret = proc.wait()
         return ret == 0
@@ -132,22 +117,16 @@ def print_detect_report() -> None:
     else:
         print("  Keil uVision : NOT FOUND")
 
-    # Check GD_Link_CLI as fallback
-    sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "shared"))
-    try:
-        from tool_config import get_tool_path
-        gdlink = get_tool_path("gdlink-cli")
-        if gdlink:
-            print(f"  GD_Link_CLI  : {gdlink}")
-    except Exception:
-        pass
+    print("\n  Available flash presets:")
+    for name, preset in FLASH_PRESETS.items():
+        driver = DRIVER_NAMES.get(preset.driver_selection, str(preset.driver_selection))
+        print(f"    {name:20s} {driver:12s} {preset.description}")
 
     print("\n  To use this skill:")
     print("  1. Open project in Keil")
     print("  2. Flash -> Configure Flash Tools -> Debug")
-    print("  3. Select 'CMSIS-DAP Debugger'")
-    print("  4. Settings -> verify GD-Link appears in Serial No")
-    print("  5. Port: SW, Max Clock: 10MHz")
+    print("  3. Select the appropriate debugger (CMSIS-DAP for GD-Link)")
+    print("  4. Or use --set-flash-preset to auto-configure")
 
 
 def get_file_version(path: str) -> str | None:
@@ -165,7 +144,8 @@ def get_file_version(path: str) -> str | None:
 
     p = ctypes.c_void_p()
     l = wintypes.UINT()
-    ctypes.windll.version.VerQueryValueW(buf, r"\\StringFileInfo\\040904b0\\ProductVersion", ctypes.byref(p), ctypes.byref(l))
+    ctypes.windll.version.VerQueryValueW(buf, r"\\StringFileInfo\\040904b0\\ProductVersion",
+                                         ctypes.byref(p), ctypes.byref(l))
     if p and l.value:
         return ctypes.wstring_at(p.value)
     return None
@@ -180,8 +160,14 @@ def main():
     parser.add_argument("--detect", action="store_true", help="Detect Keil / GD-Link environment")
     parser.add_argument("--build-only", action="store_true", help="Only build, skip flash")
     parser.add_argument("--flash-only", action="store_true", help="Only flash, skip build")
+    parser.add_argument("--read-flash-config", action="store_true",
+                        help="Read and display current flash configuration")
+    parser.add_argument("--set-flash-preset", metavar="PRESET",
+                        help=f"Apply flash config preset: {', '.join(FLASH_PRESETS.keys())}")
     parser.add_argument("--set-cmsis-dap", action="store_true",
-                        help="Configure project to use CMSIS-DAP driver")
+                        help="[Deprecated] Use --set-flash-preset cmsis-dap instead")
+    parser.add_argument("--dry-run", action="store_true",
+                        help="Show what --set-flash-preset would change without writing")
     parser.add_argument("-v", "--verbose", action="store_true")
 
     args = parser.parse_args()
@@ -191,7 +177,71 @@ def main():
         print_detect_report()
         return 0
 
-    # Require --project
+    # --read-flash-config (can work standalone or with --project)
+    if args.read_flash_config:
+        if not args.project:
+            parser.error("--project is required with --read-flash-config")
+            return 1
+        proj = Path(args.project).resolve()
+        if not proj.exists():
+            print(f"ERROR: Project not found: {proj}", file=sys.stderr)
+            return 1
+        config = read_flash_config(proj, args.target)
+        print(f"\nFlash configuration: {proj}")
+        print(f"  Target:                  {args.target}")
+        print(f"  Device:                  {config['device'] or 'N/A'}")
+        print(f"  Output:                  {config['output_name'] or 'N/A'}")
+        print(f"  Debug Probe:             {config['driver_name'] or 'N/A'} "
+              f"(code={config['driver_selection']})")
+        print(f"  Flash Before Debug:      {config['update_flash_before_debugging']}")
+        if config["errors"]:
+            for e in config["errors"]:
+                print(f"  ⚠ {e}")
+        return 0
+
+    # --set-flash-preset (safe config mutation)
+    if args.set_flash_preset or args.set_cmsis_dap:
+        if not args.project:
+            parser.error("--project is required with --set-flash-preset")
+            return 1
+        proj = Path(args.project).resolve()
+        if not proj.exists():
+            print(f"ERROR: Project not found: {proj}", file=sys.stderr)
+            return 1
+
+        preset_name = args.set_flash_preset if args.set_flash_preset else "cmsis-dap"
+
+        result = apply_flash_preset(proj, preset_name, args.target, dry_run=args.dry_run)
+
+        prefix = "[DRY RUN] " if args.dry_run else ""
+        preset = FLASH_PRESETS.get(preset_name)
+        if preset:
+            print(f"\n{prefix}Flash preset: {preset_name} — {preset.description}")
+        else:
+            print(f"\n{prefix}Flash preset: {preset_name}")
+
+        print(f"  Project: {proj}")
+        print(f"  Status:  {result['status']}")
+
+        if result["changes"]:
+            print(f"\n  Changes:")
+            for c in result["changes"]:
+                print(f"    + {c}")
+        else:
+            print("  (no changes needed)")
+
+        if result["errors"]:
+            print(f"\n  Errors:")
+            for e in result["errors"]:
+                print(f"    ⚠ {e}")
+
+        if result["status"] == "success":
+            print("\n  Tip: Open project in Keil to verify debugger settings.")
+            print("  Flash -> Configure Flash Tools -> Debug")
+
+        return 0 if result["status"] in ("success", "no_change", "dry_run") else 1
+
+    # Require --project for build/flash modes
     if not args.project:
         parser.error("--project is required (or use --detect)")
         return 1
@@ -211,17 +261,14 @@ def main():
         print(f"Project: {proj}")
         print(f"Target : {args.target}")
 
-    # --set-cmsis-dap
-    if args.set_cmsis_dap:
-        ok = set_driver_selection(proj, DRIVER_CMSIS_DAP)
-        print(f"DriverSelection -> CMSIS-DAP ({DRIVER_CMSIS_DAP}) {'OK' if ok else 'FAILED'}")
-        if ok:
-            print("Open the project in Keil to verify GD-Link is detected.")
-        return 0 if ok else 1
+    # Show current flash config
+    config = read_flash_config(proj, args.target)
+    print(f"Debug Probe: {config['driver_name'] or 'N/A'} "
+          f"(code={config['driver_selection']})")
 
     # --build-only / build step
     if not args.flash_only:
-        print(f"Building '{args.target}' ...")
+        print(f"\nBuilding '{args.target}' ...")
         ok, log = build_project(uv4, proj, args.target)
 
         if args.verbose:
@@ -230,7 +277,6 @@ def main():
 
         if not ok:
             print("\nBUILD FAILED", file=sys.stderr)
-            # Show error lines
             for line in log.splitlines():
                 if "Error" in line:
                     print(f"  {line}", file=sys.stderr)

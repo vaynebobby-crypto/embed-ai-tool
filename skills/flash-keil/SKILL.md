@@ -69,7 +69,25 @@ description: 当需要通过 Keil MDK 内置调试器烧录固件到目标板时
 - 成功后推荐 `serial-monitor`（查看串口输出）或 `debug-gdb-openocd`（在线调试）。
 - 失败时输出失败分类和日志证据，帮助用户定位问题。
 
+## 烧录配置管理
+
+当需要切换调试器（ST-Link ↔ J-Link ↔ CMSIS-DAP）而不影响工程的源文件/编译选项时，使用 `flash-gdlink` 的烧录配置预设：
+
+```bash
+# 查看当前工程的烧录配置
+python skills/flash-gdlink/scripts/gdlink_flasher.py --project <工程> --read-flash-config
+
+# 切换到 J-Link 预设
+python skills/flash-gdlink/scripts/gdlink_flasher.py --project <工程> --set-flash-preset jlink-reset-run
+```
+
+三种烧录预设对应的模板文件（位于 `Template\Keil_project\`）：
+- `Project.uvprojx.bankup2` → `stlink-default` (ST-Link)
+- `Project.uvprojx.bankup` → `jlink-no-reset` (J-Link, 不复位)
+- `Project.uvprojx` → `jlink-reset-run` (J-Link, 复位运行)
+
 ## 交接关系
 
 - 从 `build-keil` 接收编译成功的工程信息。
 - 烧录成功后交给 `serial-monitor`（查看串口输出）或 `debug-gdb-openocd`（在线调试）。
+- 需切换调试器时交给 `flash-gdlink`（烧录配置预设管理）。

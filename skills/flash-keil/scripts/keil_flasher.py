@@ -38,10 +38,9 @@ elif sys.stderr:
 
 _SCRIPT_DIR = Path(__file__).resolve().parent
 _SKILLS_DIR = _SCRIPT_DIR.parent.parent
-for _candidate in [_SKILLS_DIR / "shared", _SKILLS_DIR.parent / "shared"]:
-    if (_candidate / "tool_config.py").exists():
-        sys.path.insert(0, str(_candidate))
-        break
+_SHARED_DIR = _SKILLS_DIR.parent / "shared"
+if str(_SHARED_DIR) not in sys.path:
+    sys.path.insert(0, str(_SHARED_DIR))
 
 # 复用 build-keil 的核心函数
 _BUILD_KEIL_SCRIPTS = _SKILLS_DIR / "build-keil" / "scripts"
@@ -50,21 +49,7 @@ if _BUILD_KEIL_SCRIPTS.is_dir():
 
 from keil_builder import find_uv4, detect_environment, parse_project, is_windows
 from tool_config import get_tool_path, set_tool_path
-
-try:
-    import xml.etree.ElementTree as ET
-except ImportError:
-    ET = None  # type: ignore[assignment,misc]
-
-DRIVER_MAP = {
-    "4101": "ST-Link",
-    "4100": "ST-Link",
-    "8010": "J-Link",
-    "8001": "J-Link",
-    "5530": "CMSIS-DAP",
-    "5500": "CMSIS-DAP",
-    "0": "ULINK",
-}
+from keil_flash_config import read_flash_config, DRIVER_NAMES, FLASH_PRESETS
 
 
 @dataclass
@@ -84,23 +69,9 @@ class FlashResult:
 
 
 def parse_debugger_config(project_path: Path, target_name: str | None = None) -> str | None:
-    if ET is None:
-        return None
-    try:
-        tree = ET.parse(project_path)
-    except ET.ParseError:
-        return None
-
-    for target_elem in tree.getroot().iter("Target"):
-        name_elem = target_elem.find("TargetName")
-        if target_name and name_elem is not None and name_elem.text:
-            if name_elem.text.strip() != target_name:
-                continue
-        driver_elem = target_elem.find(".//DriverSelection")
-        if driver_elem is not None and driver_elem.text:
-            code = driver_elem.text.strip()
-            return DRIVER_MAP.get(code, f"Unknown({code})")
-    return None
+    """Read debugger name from .uvprojx using shared config module."""
+    config = read_flash_config(project_path, target_name)
+    return config.get("driver_name")
 
 
 def parse_flash_log(log_path: Path) -> tuple[bool, list[str], str | None, str | None]:
@@ -213,6 +184,12 @@ def print_detect_report(env: dict[str, Any], debugger: str | None = None) -> Non
         print(f"  🔌 工程调试器: {debugger}")
     if not env["is_windows"]:
         print("\n  ⚠️ Keil MDK 烧录仅在 Windows 上支持")
+
+    print("\n  📋 可用烧录配置预设:")
+    for name, preset in FLASH_PRESETS.items():
+        driver = DRIVER_NAMES.get(preset.driver_selection, str(preset.driver_selection))
+        print(f"    {name:20s} {driver:12s} {preset.description}")
+    print("\n  切换预设: flash-gdlink --set-flash-preset <预设名>")
 
 
 def print_flash_report(result: FlashResult) -> None:
