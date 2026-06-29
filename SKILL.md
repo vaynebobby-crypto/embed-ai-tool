@@ -33,10 +33,10 @@ metadata:
 | 构建 | `build-platformio` | 配置并构建基于 PlatformIO 的固件工程 |
 | 构建 | `build-idf` | 配置目标芯片并构建 ESP-IDF 固件工程 |
 | 构建 | `build-makefile` | 配置并构建基于 Makefile 的固件工程 |
-| 烧录 | `flash-keil` | 通过 Keil MDK 内置调试器烧录固件 |
+| 烧录 | `flash-keil` | Keil MDK 内置调试器烧录，自动识别 ST-Link/J-Link/CMSIS-DAP |
 | 烧录 | `flash-openocd` | 通过 OpenOCD 烧录 ELF/HEX/BIN 产物 |
 | 烧录 | `flash-jlink` | 通过 SEGGER J-Link 烧录固件，支持 RTT 日志捕获 |
-| 烧录 | `flash-gdlink` | 通过 GD-Link / CMSIS-DAP 烧录 GigaDevice MCU 固件 |
+| 烧录 | `flash-gdlink` | GD-Link 烧录 + Keil 烧录预设管理（ST-Link/J-Link/CMSIS-DAP 一键切换） |
 | 烧录 | `flash-platformio` | 通过 PlatformIO 上传机制烧录固件 |
 | 烧录 | `flash-idf` | 通过 ESP-IDF 工具链烧录固件并支持 JTAG 调试 |
 | 调试 | `debug-gdb-openocd` | 通过 OpenOCD 附着 GDB 调试 |
@@ -104,6 +104,7 @@ python3 embed-ai-tool/scripts/install.py /path/to/project --skills build-cmake f
 | `CMakeLists.txt` + `*.cmake` | CMake | `build-cmake` |
 | `Makefile` / `makefile`（无 CMakeLists.txt） | Makefile | `build-makefile` |
 | `.jlink` 文件或 JLinkExe 在 PATH | J-Link | `flash-jlink` `debug-jlink` |
+| `JLinkSettings.ini` + `*.uvprojx` | Keil + J-Link | `flash-gdlink`（检查烧录配置预设） |
 | `.vscode/launch.json` 含 `openocd` | OpenOCD | `flash-openocd` `debug-gdb-openocd` |
 | 以上均无 | 未知 | **必须询问用户** |
 
@@ -126,10 +127,10 @@ python3 embed-ai-tool/scripts/install.py /path/to/project --skills build-cmake f
 
 | 技能 | 适用场景 |
 |------|----------|
-| `flash-keil` | Keil 工程 + 内置调试器（ST-Link / J-Link / CMSIS-DAP） |
+| `flash-keil` | Keil 工程 + 内置调试器（ST-Link / J-Link / CMSIS-DAP 自动识别） |
 | `flash-openocd` | OpenOCD 兼容探针（ST-Link / CMSIS-DAP / DAPLink） |
 | `flash-jlink` | SEGGER J-Link 探针 |
-| `flash-gdlink` | GD-Link / CMSIS-DAP（GigaDevice MCU） |
+| `flash-gdlink` | GD-Link / CMSIS-DAP（GigaDevice MCU）+ Keil 烧录预设管理 |
 | `flash-platformio` | PlatformIO 上传（串口 / JTAG / DFU） |
 | `flash-idf` | ESP-IDF 工具链（ESP32 系列串口烧录） |
 

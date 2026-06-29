@@ -130,10 +130,10 @@ python3 scripts/em_config.py path
 | `build-makefile` | 配置并构建基于 Makefile 的固件工程 |
 | `build-platformio` | 配置并构建基于 PlatformIO 的固件工程 |
 | `build-idf` | 配置目标芯片并构建 ESP-IDF 固件工程 |
-| `flash-keil` | 通过 Keil MDK 内置调试器烧录固件 |
+| `flash-keil` | Keil MDK 内置调试器烧录，自动识别 ST-Link/J-Link/CMSIS-DAP |
 | `flash-openocd` | 通过 OpenOCD 烧录 ELF/HEX/BIN 产物 |
 | `flash-jlink` | 通过 SEGGER J-Link 烧录固件，支持 RTT 日志捕获 |
-| `flash-gdlink` | 通过 GD-Link / CMSIS-DAP 烧录 GigaDevice MCU 固件 |
+| `flash-gdlink` | GD-Link 烧录 + Keil 工程烧录预设管理（ST-Link/J-Link/CMSIS-DAP 一键切换） |
 | `flash-platformio` | 通过 PlatformIO 上传机制烧录固件 |
 | `flash-idf` | 通过 ESP-IDF 工具链烧录固件并支持 JTAG 调试 |
 | `debug-gdb-openocd` | 通过 OpenOCD + GDB 进行下载后调试、仅附着和崩溃现场排查 |

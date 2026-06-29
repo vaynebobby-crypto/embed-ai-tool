@@ -130,10 +130,10 @@ python3 scripts/em_config.py path
 | `build-makefile` | Configure and build bare Makefile embedded projects |
 | `build-platformio` | Configure and build PlatformIO firmware projects |
 | `build-idf` | Configure target chip and build ESP-IDF firmware projects |
-| `flash-keil` | Flash firmware via Keil MDK built-in debugger |
+| `flash-keil` | Flash via Keil MDK debugger, auto-detect ST-Link/J-Link/CMSIS-DAP |
 | `flash-openocd` | Flash ELF/HEX/BIN artifacts via OpenOCD |
 | `flash-jlink` | Flash firmware via SEGGER J-Link with RTT log capture |
-| `flash-gdlink` | Flash GigaDevice MCU firmware via GD-Link / CMSIS-DAP |
+| `flash-gdlink` | GD-Link flash + Keil flash preset manager (ST-Link/J-Link/CMSIS-DAP one-click switch) |
 | `flash-platformio` | Flash firmware via PlatformIO upload mechanism |
 | `flash-idf` | Flash firmware via ESP-IDF toolchain with JTAG debug support |
 | `debug-gdb-openocd` | Attach GDB via OpenOCD — supports post-flash debug, attach-only, and crash triage |
