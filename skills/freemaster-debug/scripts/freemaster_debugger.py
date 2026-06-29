@@ -55,6 +55,7 @@ class DebugResult:
     pmpx_path: str | None = None
     elf_path: str | None = None
     vars_count: int = 0
+    scope_vars_count: int = 0
     evidence: list[str] = field(default_factory=list)
     failure_category: str | None = None
 
@@ -161,6 +162,7 @@ def run_start_mode(args: argparse.Namespace) -> DebugResult:
     pmpx_path = output_dir / f"{device}.pmpx"
 
     variables = [v.strip() for v in args.vars.split(",") if v.strip()] if args.vars else []
+    scope_vars = [v.strip() for v in args.scope_vars.split(",") if v.strip()] if args.scope_vars else []
 
     gen_result = generate_pmpx(
         output_path=pmpx_path,
@@ -168,8 +170,12 @@ def run_start_mode(args: argparse.Namespace) -> DebugResult:
         device=device,
         template_path=Path(args.template) if args.template else None,
         variables=variables,
+        scope_vars=scope_vars,
         sample_rate_hz=args.sample_rate,
         jlink_speed_khz=args.jlink_speed,
+        recorder_dir=args.recorder_dir,
+        scope_time_per_div=args.scope_time_per_div,
+        scope_time_total=args.scope_time_total,
     )
 
     if gen_result["status"] == "failure":
@@ -182,6 +188,7 @@ def run_start_mode(args: argparse.Namespace) -> DebugResult:
 
     pmpx_str = gen_result["path"]
     vars_count = gen_result["vars_count"]
+    scope_vars_count = gen_result.get("scope_vars_count", 0)
     evidence.append(f".pmpx: {pmpx_str}")
 
     launched = launch_freemaster(freemaster_exe, pmpx_str)
@@ -189,7 +196,10 @@ def run_start_mode(args: argparse.Namespace) -> DebugResult:
     if launched:
         summary = f"FreeMASTER 已启动，项目 {Path(pmpx_str).name} 已加载"
         if vars_count > 0:
-            summary += f"（预置 {vars_count} 个变量）"
+            summary += f"（预置 {vars_count} 个变量"
+            if scope_vars_count > 0:
+                summary += f"，其中 {scope_vars_count} 个已配置 Scope"
+            summary += "）"
 
         return DebugResult(
             status="success",
@@ -199,6 +209,7 @@ def run_start_mode(args: argparse.Namespace) -> DebugResult:
             pmpx_path=pmpx_str,
             elf_path=elf_path,
             vars_count=vars_count,
+            scope_vars_count=scope_vars_count,
             evidence=evidence,
         )
     else:
@@ -209,6 +220,7 @@ def run_start_mode(args: argparse.Namespace) -> DebugResult:
             pmpx_path=pmpx_str,
             elf_path=elf_path,
             vars_count=vars_count,
+            scope_vars_count=scope_vars_count,
             evidence=evidence + ["⚠️ FreeMASTER 启动失败"],
             failure_category="environment-missing",
         )
@@ -249,6 +261,7 @@ def run_generate_mode(args: argparse.Namespace) -> DebugResult:
     pmpx_path = output_dir / f"{device}.pmpx"
 
     variables = [v.strip() for v in args.vars.split(",") if v.strip()] if args.vars else []
+    scope_vars = [v.strip() for v in args.scope_vars.split(",") if v.strip()] if args.scope_vars else []
 
     gen_result = generate_pmpx(
         output_path=pmpx_path,
@@ -256,8 +269,12 @@ def run_generate_mode(args: argparse.Namespace) -> DebugResult:
         device=device,
         template_path=Path(args.template) if args.template else None,
         variables=variables,
+        scope_vars=scope_vars,
         sample_rate_hz=args.sample_rate,
         jlink_speed_khz=args.jlink_speed,
+        recorder_dir=args.recorder_dir,
+        scope_time_per_div=args.scope_time_per_div,
+        scope_time_total=args.scope_time_total,
     )
 
     if gen_result["status"] == "failure":
@@ -275,6 +292,7 @@ def run_generate_mode(args: argparse.Namespace) -> DebugResult:
         pmpx_path=gen_result["path"],
         elf_path=elf_path,
         vars_count=gen_result["vars_count"],
+        scope_vars_count=gen_result.get("scope_vars_count", 0),
         evidence=evidence,
     )
 
@@ -294,6 +312,8 @@ def print_debug_report(result: DebugResult) -> None:
         print(f"  .pmpx:          {result.pmpx_path}")
     if result.vars_count > 0:
         print(f"  预置变量:       {result.vars_count} 个")
+    if result.scope_vars_count > 0:
+        print(f"  Scope 变量:     {result.scope_vars_count} 个")
 
     if result.evidence:
         print(f"\n📝 证据:")
@@ -304,7 +324,10 @@ def print_debug_report(result: DebugResult) -> None:
         print(f"\n  失败分类: {result.failure_category}")
 
     if result.status == "success":
-        print("\n💡 下一步: 在 FreeMASTER GUI 中将变量拖入 Scope/Oscilloscope 开始监控")
+        if result.scope_vars_count > 0:
+            print("\n💡 下一步: 在 FreeMASTER GUI 中点击 GO 连接目标，Scope 已预配置曲线")
+        else:
+            print("\n💡 下一步: 在 FreeMASTER GUI 中将变量拖入 Scope/Oscilloscope 开始监控")
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -315,6 +338,7 @@ def build_parser() -> argparse.ArgumentParser:
 示例:
   %(prog)s --elf build/app.elf --device GD32F450IK
   %(prog)s --elf build/app.elf --device GD32F450IK --vars adc_value,pid_output
+  %(prog)s --elf build/app.elf --device GD32F450IK --vars adc_value --scope-vars adc_value --recorder-dir D:\\Data
   %(prog)s --elf build/app.elf --device STM32F407VG --mode generate
   %(prog)s --detect
         """,
@@ -327,8 +351,15 @@ def build_parser() -> argparse.ArgumentParser:
         help="执行模式: start（默认，生成+启动），generate（仅生成）",
     )
     parser.add_argument("--vars", default="", help="预置变量名，逗号分隔")
+    parser.add_argument("--scope-vars", default="",
+                        help="Scope/Oscilloscope 变量名，逗号分隔（自动包含在 --vars 中）")
+    parser.add_argument("--scope-time-per-div", type=float, default=0.01,
+                        help="示波器每格时间 s（默认 0.01 = 10ms/div）")
+    parser.add_argument("--scope-time-total", type=float, default=0.1,
+                        help="示波器时间窗口 s（默认 0.1 = 100ms）")
     parser.add_argument("--sample-rate", type=int, default=1000, help="Recorder 采样率 Hz（默认 1000）")
     parser.add_argument("--jlink-speed", type=int, default=4000, help="J-Link SWD 速度 kHz（默认 4000）")
+    parser.add_argument("--recorder-dir", default=None, help="Recorder 数据保存目录")
     parser.add_argument("--output-dir", default=None, help=".pmpx 输出目录（默认当前工作目录）")
     parser.add_argument("--template", default=None, help="参考 .pmpx 模板路径")
     return parser
