@@ -2,9 +2,13 @@
 
 ## 概述
 
-`freemaster_debugger.py` 是 FreeMASTER 调试的主入口脚本。它编排环境探测、.pmpx 生成和 GUI 启动。
+`freemaster_debugger.py` 是 FreeMASTER 在线调试的主入口脚本。它编排环境探测、.pmpx 生成和 GUI 启动。
+
+`freemaster_export_analyzer.py` 是离线录制数据分析工具，解析 Scope/Recorder 导出的数据文件。
 
 ## 快速开始
+
+### 在线调试
 
 ```powershell
 # 1. 探测 FreeMASTER 环境
@@ -26,6 +30,30 @@ python skills/freemaster-debug/scripts/freemaster_debugger.py --elf build/app.el
 python skills/freemaster-debug/scripts/freemaster_debugger.py --elf build/app.elf --device GD32F450IK --mode generate
 ```
 
+### 离线录制数据分析
+
+```powershell
+# 1. 基础分析报告（元数据 + 变量分类 + 跳变时间线）
+python skills/freemaster-debug/scripts/freemaster_export_analyzer.py D:\Data\osc00005.txt
+
+# 2. 详细模式（显示每次跳变的新旧值）
+python skills/freemaster-debug/scripts/freemaster_export_analyzer.py D:\Data\osc00005.txt --verbose
+
+# 3. JSON 格式输出（供下游脚本/程序消费）
+python skills/freemaster-debug/scripts/freemaster_export_analyzer.py D:\Data\osc00005.txt --json
+
+# 4. 导出指定变量子集到 CSV
+python skills/freemaster-debug/scripts/freemaster_export_analyzer.py D:\Data\osc00005.txt \
+  --export subset.csv --vars System_Function,sys_state,Charge_effective_fsw
+
+# 5. 导出指定时间段的数据
+python skills/freemaster-debug/scripts/freemaster_export_analyzer.py D:\Data\osc00005.txt \
+  --export transient.csv --vars sys_state,Relay1_Status --t0 4.7 --t1 12.5
+
+# 6. 解析 Recorder 导出的 CSV 文件
+python skills/freemaster-debug/scripts/freemaster_export_analyzer.py D:\Data\recorder_log.csv
+```
+
 ## 主控脚本参数
 
 | 参数 | 必须 | 默认值 | 说明 |
@@ -45,6 +73,50 @@ python skills/freemaster-debug/scripts/freemaster_debugger.py --elf build/app.el
 | `--template` | 否 | 内置参考模板 | 自定义 .pmpx 参考模板路径 |
 
 *start/generate 模式必须。
+
+## 分析脚本参数
+
+| 参数 | 必须 | 默认值 | 说明 |
+|------|------|--------|------|
+| `file` | 是 | — | FreeMASTER 导出的 `.txt` 或 `.csv` 文件路径 |
+| `--verbose`, `-v` | 否 | — | 显示所有跳变的详细值变化（否则超过 5 次跳变时折叠显示） |
+| `--json` | 否 | — | 以 JSON 格式输出分析结果 |
+| `--export` | 否 | — | 导出数据子集到指定 CSV 文件路径 |
+| `--vars` | 否 | 全部 | 要导出的变量名，逗号分隔 |
+| `--t0` | 否 | 起始时间 | 导出起始时间（秒），默认从数据开头 |
+| `--t1` | 否 | 结束时间 | 导出结束时间（秒），默认到数据结尾 |
+
+### 分析报告解读
+
+报告包含以下几个部分：
+
+1. **文件信息**：文件路径、类型（oscilloscope/recorder）、变量数、采样点数、时间范围、平均采样间隔、估算采样率
+2. **变量状态分类**：恒定变量数 + 变化变量数 + 总跳变次数
+3. **恒定变量列表**：全程无变化的值（通常表示对应功能模块未激活）
+4. **变化变量列表**：每个有跳变的变量及其跳变时间线
+
+跳变检测基于值的变化（浮点阈值 1e-9），不检测微小噪声波动。
+
+### 导出文件格式
+
+分析脚本支持两种输入格式：
+
+**Oscilloscope 导出（`.txt`）**：
+```
+# Oscilloscope Data
+# Seconds	Var1	Var2	Var3
+1.885795	2	0	0
+1.900089	2	0	0
+```
+
+**Recorder 导出（`.csv`）**：
+```
+Time [s],Var1,Var2,Var3
+1.885795,2,0,0
+1.900089,2,0,0
+```
+
+自动检测文件类型，无需手动指定。
 
 ## 探测脚本参数
 
@@ -77,8 +149,8 @@ python skills/freemaster-debug/scripts/freemaster_debugger.py --elf build/app.el
 
 | 退出码 | 含义 |
 |--------|------|
-| `0` | 成功或部分成功（.pmpx 已生成） |
-| `1` | 阻塞或失败（关键信息缺失/环境问题） |
+| `0` | 成功或部分成功（.pmpx 已生成 / 分析完成） |
+| `1` | 阻塞或失败（关键信息缺失/环境问题/文件解析失败） |
 
 ## 安装路径配置
 
@@ -104,3 +176,4 @@ python scripts/em_config.py set freemaster "D:\NXP\FreeMASTER 3.2\FreeMASTER.exe
 - 已安装 SEGGER J-Link 驱动（复用 `debug-jlink` 的环境）
 - 目标 MCU 已通过 SWD 接口连接 J-Link 探针
 - 已编译带符号的 ELF 固件文件
+- 离线分析脚本（`freemaster_export_analyzer.py`）跨平台可用，无额外依赖
